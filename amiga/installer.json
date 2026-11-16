@@ -1,0 +1,14 @@
+{
+  "name": "2048",
+  "version": "20220613-gfos1",
+  "drawer": "2048",
+  "program": "2048",
+  "cpu": "68040",
+  "fpu": false,
+  "space": 200000,
+  "modules": [],
+  "parent": "Work:Games",
+  "badge": "icons/art/2048.png",
+  "keep": ["2048.save"],
+  "script": "Install-2048"
+}

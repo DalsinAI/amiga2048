@@ -1,0 +1,6 @@
+# Upstream: 2048-in-terminal (Alexander Grehov, MIT) at this commit;
+# package/build-amiga.sh fetches it, never kept here.
+UP_URL=https://github.com/alewmoose/2048-in-terminal
+UP_COMMIT=bf22f868a2e0e572f22153468585ec0226a4b8b2
+UP_VERSION=git20220613
+PORT_VERSION=20220613-gfos1
