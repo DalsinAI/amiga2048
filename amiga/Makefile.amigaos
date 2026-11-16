@@ -23,7 +23,8 @@ CPU     ?= -m68040 -msoft-float
 # -fno-tree-loop-distribute-patterns: GCC 16's loop miscompile.
 OPT     ?= -Os -fomit-frame-pointer -fno-tree-loop-distribute-patterns
 
-UPFLAGS = -noixemul $(OPT) $(CPU) -std=gnu11 -D_GNU_SOURCE -D__amigaos__ -Iamiga/include -Iamiga
+UPFLAGS = -noixemul $(OPT) $(CPU) -std=gnu11 -D_GNU_SOURCE -D__amigaos__ \
+          -include amiga/include/amiga_prelude.h -Iamiga/include -Iamiga
 MYFLAGS = -noixemul $(OPT) $(CPU) -std=gnu99 -Wall -Iamiga/include -Iamiga
 LDFLAGS = -noixemul $(CPU)
 

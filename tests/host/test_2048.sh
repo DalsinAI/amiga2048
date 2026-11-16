@@ -29,7 +29,7 @@ MINE="-std=gnu99 -Wall -Werror -D_XOPEN_SOURCE=600 -D_DEFAULT_SOURCE -Iamiga/inc
 for f in curses keys; do $CC $MINE -c -o "$T/$f.o" "amiga/$f.c"; done
 $CC $MINE -c -o "$T/con.o" tests/host/console_host.c
 for f in board draw main save; do
-    $CC -std=gnu11 -w -D_GNU_SOURCE -D__amigaos__ -Iamiga/include -Iamiga -c -o "$T/u_$f.o" "$UP/src/$f.c"
+    $CC -std=gnu11 -w -D_GNU_SOURCE -D__amigaos__ -include amiga/include/amiga_prelude.h -Iamiga/include -Iamiga -c -o "$T/u_$f.o" "$UP/src/$f.c"
 done
 $CC -o "$T/2048" "$T"/u_*.o "$T/curses.o" "$T/keys.o" "$T/con.o"
 
