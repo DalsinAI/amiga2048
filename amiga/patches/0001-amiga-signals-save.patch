@@ -1,0 +1,86 @@
+diff -ruN a/src/main.c b/src/main.c
+--- a/src/main.c
++++ b/src/main.c
+@@ -8,6 +8,11 @@
+ #include "board.h"
+ #include "save.h"
+ 
++#ifdef __amigaos__
++/* the Amiga: no signals to hold off; the close gadget ends the game */
++#define sigprocmask(how, set, old) ((void)0)
++#endif
++
+ static sigset_t all_signals;
+ static Board board;
+ static Stats stats = {.auto_save = false, .game_over = false};
+@@ -31,13 +36,16 @@
+ 	bool show_animations = 1;
+ 	bool terminal_too_small;
+ 
++#ifndef __amigaos__
+ 	if (!isatty(fileno(stdout)) ||
+ 	    !isatty(fileno(stdin))) {
+ 		exit(1);
+ 	}
++#endif
+ 
+ 	srand(time(NULL));
+ 
++#ifndef __amigaos__
+ 	sigfillset(&all_signals);
+ 	sigdelset(&all_signals, SIGKILL);
+ 	sigdelset(&all_signals, SIGSTOP);
+@@ -47,6 +55,7 @@
+ 	signal(SIGABRT, sig_handler);
+ 	signal(SIGTERM, sig_handler);
+ 	signal(SIGHUP,  sig_handler);
++#endif
+ 
+ 	sigprocmask(SIG_BLOCK, &all_signals, NULL);
+ 	if (load_game(&board, &stats) != 0) {
+diff -ruN a/src/save.c b/src/save.c
+--- a/src/save.c
++++ b/src/save.c
+@@ -3,7 +3,9 @@
+ #include <string.h>
+ #include <fcntl.h>
+ #include <unistd.h>
++#ifndef __amigaos__
+ #include <sys/file.h>
++#endif
+ #include "common.h"
+ #include "save.h"
+ 
+@@ -27,12 +29,20 @@
+ 	if (get_filename() == -1)
+ 		return -1;
+ 
++#ifdef __amigaos__
++	/* one game at a time: AmigaDOS's own lock on the open file */
++	fd = open(filename, O_RDWR | O_CREAT, 0600);
++	if (fd == -1)
++		return -1;
++	stats->auto_save = true;
++#else
+ 	fd = open(filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+ 	if (fd == -1)
+ 		return -1;
+ 
+ 	if (flock(fd, LOCK_EX | LOCK_NB) != -1)
+ 		stats->auto_save = true;
++#endif
+ 
+ 	ssize_t s;
+ 	s = read(fd, &stats->score, sizeof(int));
+@@ -89,6 +99,11 @@
+ 
+ static int get_filename(void)
+ {
++#ifdef __amigaos__
++	/* the game beside the program */
++	strcpy(filename, "PROGDIR:2048.save");
++	return 0;
++#endif
+ 	char *home = getenv("HOME");
+ 	if (!home || strlen(home) > PATH_LEN-7)
+ 		return -1;
