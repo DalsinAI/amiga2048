@@ -2,7 +2,7 @@
 # Host tests of the port, on this machine: amiga/curses.c and amiga/keys.c
 # built with upstream's 2048 (amiga/patches applied, __amigaos__ set, so
 # the Amiga's paths are the ones built) over a plain terminal
-# (tests/host/console_host.c), played with scripted keys; tests/host/vt.py
+# (tests/host/console_host.c), played with scripted keys; GFOpenCurses' tests/host/vt.py
 # reads back the screen as the Amiga's console would show it:
 #  - keys: the cursor keys come as KEY_* with keypad on, CSI sequences are
 #    dropped without it, CR is NL;
@@ -19,23 +19,25 @@ set -eu
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(CDPATH= cd -- "$HERE/../.." && pwd)
 UP=${UP:?UP=upstream source}
+GC=${GFOPENCURSES:?GFOPENCURSES=gfopencurses checkout}
+VT=$GC/tests/host/vt.py
 CC=${HOSTCC:-cc}
 command -v "$CC" >/dev/null 2>&1 || { echo "host tests: skipped (no C compiler)"; exit 0; }
 T=$(mktemp -d "${TMPDIR:-/tmp}/2048-host.XXXXXX")
 [ -n "${TEST_KEEP:-}" ] || trap 'rm -rf "$T"' EXIT INT TERM
 cd "$ROOT"
 
-MINE="-std=gnu99 -Wall -Werror -D_XOPEN_SOURCE=600 -D_DEFAULT_SOURCE -Iamiga/include -Iamiga"
-for f in curses keys; do $CC $MINE -c -o "$T/$f.o" "amiga/$f.c"; done
-$CC $MINE -c -o "$T/con.o" tests/host/console_host.c
+MINE="-std=gnu99 -Wall -Werror -D_XOPEN_SOURCE=600 -D_DEFAULT_SOURCE -I$GC/include -Iamiga/include -Iamiga"
+for f in curses keys; do $CC $MINE -c -o "$T/$f.o" "$GC/src/$f.c"; done
+$CC $MINE -c -o "$T/con.o" "$GC/src/console_host.c"
 for f in board draw main save; do
-    $CC -std=gnu11 -w -D_GNU_SOURCE -D__amigaos__ -include amiga/include/amiga_prelude.h -Iamiga/include -Iamiga -c -o "$T/u_$f.o" "$UP/src/$f.c"
+    $CC -std=gnu11 -w -D_GNU_SOURCE -D__amigaos__ -include amiga/include/amiga_prelude.h -I$GC/include -Iamiga/include -Iamiga -c -o "$T/u_$f.o" "$UP/src/$f.c"
 done
 $CC -o "$T/2048" "$T"/u_*.o "$T/curses.o" "$T/keys.o" "$T/con.o"
 
 cat > "$T/keys_test.c" <<'C'
 #include <stdio.h>
-#include "keys.h"
+#include "gfopencurses_keys.h"
 static const unsigned char *p; static int n;
 static int next(void) { return n-- > 0 ? *p++ : -1; }
 int main(void)
@@ -65,14 +67,14 @@ want() {	# name, output, texts...
     n=$#
     for t in "$@"; do set -- "$@" --want "$t"; done
     shift "$n"
-    if python3 "$HERE/vt.py" "$out" "$@" > "$T/vt.txt"; then
+    if python3 "$VT" "$out" "$@" > "$T/vt.txt"; then
         echo "ok   $name"
     else
         echo "FAIL $name"; cat "$T/vt.txt"; fails=$((fails + 1))
     fi
 }
-board() { python3 "$HERE/vt.py" "$1" | sed -n 2,23p | cut -c13-54; }
-score() { python3 "$HERE/vt.py" "$1" | sed -n 5p | cut -c56- | tr -dc 0-9; }
+board() { python3 "$VT" "$1" | sed -n 2,23p | cut -c13-54; }
+score() { python3 "$VT" "$1" | sed -n 5p | cut -c56- | tr -dc 0-9; }
 tiles() { board "$1" | grep -o '[0-9][0-9]*' | wc -l; }
 
 if play '' "$T/start.out"; then echo "ok   the window's close ends the game"; else echo "FAIL the end of the input did not end it"; fails=$((fails + 1)); fi
