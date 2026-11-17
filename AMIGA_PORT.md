@@ -17,13 +17,12 @@ any screen with eight colours or more: no SDL, no ACGame, no GFOpenGPU.
 
 How it was ported
 -----------------
-The game is built from upstream as it is. amiga/curses.c is the part of
-ncurses it uses: windows kept in memory, and a refresh that sends the
+The game is built from upstream as it is. Its curses is GFOpenCurses
+(DalsinAI/gfopencurses, the library our console ports share): windows kept in memory, and a refresh that sends the
 console only the lines written since, as ANSI that console.device reads,
 with colour pairs on the screen's first eight pens (SGR 30-37, 40-47)
-and lines and corners in ASCII. amiga/console_amiga.c opens the window,
-puts it in raw mode and reads the keys (amiga/keys.c: the cursor keys as
-curses' KEY_*). The one patch, amiga/patches/0001, leaves out the Unix
+and lines and corners in ASCII; it opens the window, puts it in raw mode
+and reads the keys (the cursor keys as curses' KEY_*). The one patch, amiga/patches/0001, leaves out the Unix
 signals and the terminal check, and keeps the game in PROGDIR:2048.save.
 
 Tests: tests/host/test_2048.sh builds the game on the build machine over

@@ -8,14 +8,16 @@
 # UP is upstream at the commit package/2048.lock names, with amiga/patches
 # applied (package/build-amiga.sh does both). STOVE is a GFOpenAmigaGCC
 # 16.2.0-open6 stove (prefix/ has the compiler and the NDK). The game draws
-# through amiga/curses.c (the part of ncurses it uses, sent to the console
-# as ANSI with the eight pens for colour); amiga/console_amiga.c opens the
-# window and reads the keys (amiga/keys.c: the cursor keys as KEY_*).
+# through GFOpenCurses (DalsinAI/gfopencurses, at the commit
+# package/gfopencurses.lock names, built first: GFOPENCURSES is its
+# checkout), which opens the window, reads the keys (the cursor keys as
+# KEY_*) and sends the screen as ANSI with the eight pens for colour.
 #
 # Output: build/amigaos/2048/ (the drawer: 2048, ReadMe, the licence,
 # GlowIcons), build/amigaos/2048.info and Install-2048 beside them.
 
 UP      ?= ../2048-in-terminal
+GFOPENCURSES ?= ../gfopencurses
 STOVE   ?= $(HOME)/AmiCradle/stoves/os32-gcc16-open6
 PREFIX  ?= $(STOVE)/prefix
 CC      = $(PREFIX)/bin/m68k-amigaos-gcc
@@ -24,8 +26,8 @@ CPU     ?= -m68040 -msoft-float
 OPT     ?= -Os -fomit-frame-pointer -fno-tree-loop-distribute-patterns
 
 UPFLAGS = -noixemul $(OPT) $(CPU) -std=gnu11 -D_GNU_SOURCE -D__amigaos__ \
-          -include amiga/include/amiga_prelude.h -Iamiga/include -Iamiga
-MYFLAGS = -noixemul $(OPT) $(CPU) -std=gnu99 -Wall -Iamiga/include -Iamiga
+          -include amiga/include/amiga_prelude.h -I$(GFOPENCURSES)/include -Iamiga/include -Iamiga
+MYFLAGS = -noixemul $(OPT) $(CPU) -std=gnu99 -Wall -I$(GFOPENCURSES)/include -Iamiga/include -Iamiga
 LDFLAGS = -noixemul $(CPU)
 
 BUILD   = build/amigaos
@@ -33,7 +35,7 @@ OBJ     = $(BUILD)/obj
 OUT     = $(BUILD)/2048
 
 GAME    = board draw main save
-PORT    = curses keys console_amiga
+PORT    = 
 
 all: $(OUT)/2048 package
 
@@ -41,13 +43,13 @@ $(OBJ)/up/%.o: $(UP)/src/%.c $(wildcard amiga/include/*.h)
 	@mkdir -p $(dir $@)
 	$(CC) $(UPFLAGS) -c -o $@ $<
 
-$(OBJ)/port/%.o: amiga/%.c $(wildcard amiga/*.h amiga/include/*.h)
+$(OBJ)/port/%.o: amiga/%.c $(wildcard amiga/include/*.h)
 	@mkdir -p $(dir $@)
 	$(CC) $(MYFLAGS) -c -o $@ $<
 
 $(OUT)/2048: $(GAME:%=$(OBJ)/up/%.o) $(PORT:%=$(OBJ)/port/%.o)
 	@mkdir -p $(OUT)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) -o $@ $^ -L$(GFOPENCURSES)/lib -lgfopencurses
 
 package: $(OUT)/2048 AMIGA_PORT.md
 	cp AMIGA_PORT.md $(OUT)/ReadMe
